@@ -62,6 +62,10 @@ static NSString *const EVENT_CHANNEL_NAME = @"plugins.com.tmd/event_qiyu";
         }];
     }
     else if ([@"openServiceWindow" isEqualToString:call.method]) {
+        if (self.nav) { // 避免重复打开
+            result(nil);
+            return;
+        }
         NSString *sessionTitle = arguments[@"sessionTitle"];
         int64_t groupId = [arguments[@"groupId"] longLongValue];
         int64_t staffId = [arguments[@"staffId"] longLongValue];

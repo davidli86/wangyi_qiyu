@@ -4,6 +4,8 @@ import android.app.Application;
 import android.graphics.Color;
 
 import com.qiyukf.unicorn.api.*;
+import com.qiyukf.unicorn.api.lifecycle.SessionLifeCycleListener;
+import com.qiyukf.unicorn.api.lifecycle.SessionLifeCycleOptions;
 
 import java.lang.reflect.Array;
 import java.util.Dictionary;
@@ -23,6 +25,7 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 public class WangyiQiyuPlugin implements MethodCallHandler {
   private Registrar _registrar;
   private YSFOptions _options;
+  private boolean _isInSession;
 
 //  EventSink buttonClickCallbackEvent;
 //  EventSink onURLClickCallbackEvent;
@@ -60,6 +63,11 @@ public class WangyiQiyuPlugin implements MethodCallHandler {
       Unicorn.init(_registrar.activity(), appKey, _options, new UILImageLoader());
       result.success(null);
     } else if (call.method.equals("openServiceWindow")) {
+      if (_isInSession) {
+        result.success(null);
+        return;
+      }
+      _isInSession = true;
       ConsultSource source = null;
       String sessionTitle = null;
       if (arguments != null) {
@@ -88,6 +96,16 @@ public class WangyiQiyuPlugin implements MethodCallHandler {
         source.robotId = robotId;
         source.vipLevel = vipLevel;
         source.robotFirst = openRobotInShuntMode;
+        SessionLifeCycleOptions lifeCycleOptions = new SessionLifeCycleOptions();
+        lifeCycleOptions.setCanCloseSession(true)
+        .setCanQuitQueue(true);
+        lifeCycleOptions.setSessionLifeCycleListener(new SessionLifeCycleListener() {
+          @Override
+          public void onLeaveSession() {
+            _isInSession = false;
+          }
+        });
+        source.sessionLifeCycleOptions = lifeCycleOptions;
       }
       Unicorn.openServiceActivity(_registrar.activity(), sessionTitle, source);
       result.success(null);
