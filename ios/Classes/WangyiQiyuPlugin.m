@@ -25,12 +25,15 @@ static NSString *const EVENT_CHANNEL_NAME = @"plugins.com.tmd/event_qiyu";
 
 @implementation WangyiQiyuPlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
+
     FlutterMethodChannel* channel = [FlutterMethodChannel methodChannelWithName:CHANNEL_NAME binaryMessenger:[registrar messenger]];
     WangyiQiyuPlugin* instance = [[WangyiQiyuPlugin alloc] initWithRegistrar:registrar];
     [registrar addMethodCallDelegate:instance channel:channel];
 
     FlutterEventChannel *eventChannel = [FlutterEventChannel eventChannelWithName:EVENT_CHANNEL_NAME binaryMessenger:[registrar messenger]];
     [eventChannel setStreamHandler:instance];
+    
+    [registrar addApplicationDelegate:instance];
 }
 
 - (instancetype)initWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
