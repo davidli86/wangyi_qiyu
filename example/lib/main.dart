@@ -56,7 +56,7 @@ class _MyAppState extends State<MyApp> {
   }
   _onPressed() {
     var _defaultSessionConfig = {
-      'sessionTitle': 'QiYuDemoForFlutter',
+      'sessionTitle': '在线客服',
       'groupId': 0,
       'staffId': 0,
       'robotId': 0,
@@ -68,40 +68,27 @@ class _MyAppState extends State<MyApp> {
         'urlString':'http://www.qiyukf.com',
         'customInfo':'我是来自自定义的信息'
       },
-
-      'commodityInfo': {
-        'title':'Flutter商品',
-        'desc':'这是来自网易七鱼Flutter的商品描述',
-        'pictureUrlString':'https://qiyukf.nosdn.127.net/main/res/img/online/qy-web-cp-zxkf-kh-3.1.1-icon@2x_86ec48d3e30b8fe5d6c1d5099d370019.png',
-        'urlString':'http://www.qiyukf.com',
-        'note':'￥1888',
-        'show':true,
-        'tagsArray': [
-          {
-            'label': '1',
-            'url': 'http://www.qiyukf.com',
-            'focusIframe': '2',
-            'data': '3'
-          },
-        ],
-        'tagsString': 'tagsString',
-        'isCustom': true,
-        'sendByUser': false,
-        'actionText': 'actionText',
-        'actionTextColor': '#FFFFFF',
-        'ext': '123456'
-      },
-      'buttonInfoArray': [
+    };
+    var params = {
+      'userId': 'uid10101010',
+      'data': [
         {
-          'buttonId': '123',
-          'title': 'buttonInfoArray',
-          'userData': 'userData'
-        }
-      ],
-      'showCloseSessionEntry':true,
-      'showQuitQueue':true
+          'key': 'real_name',
+          'value': '边晨'
+        },
+        {
+          'key': 'mobile_phone',
+          'value': '13805713536',
+          'hidden': false
+        },
+        {
+          'key': 'email',
+          'value': 'bianchen@163.com',
+        },
+      ]
     };
     WangyiQiyu().openServiceWindow(_defaultSessionConfig);
+    WangyiQiyu().setUserInfo(params);
     WangyiQiyu().setCustomUIConfig({"navBackgroundColor":"#CC00FF"});
   }
 

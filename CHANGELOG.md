@@ -9,3 +9,7 @@ add ios app delegate
 ## 0.0.3
 
 避免重复打开对话界面
+
+## 0.0.4
+
+安卓修复bug

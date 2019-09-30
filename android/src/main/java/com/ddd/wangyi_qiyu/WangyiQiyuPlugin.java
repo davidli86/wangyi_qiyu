@@ -1,6 +1,9 @@
 package com.ddd.wangyi_qiyu;
 
+import android.app.ActivityManager;
 import android.app.Application;
+import android.content.ComponentName;
+import android.content.Context;
 import android.graphics.Color;
 
 import com.qiyukf.unicorn.api.*;
@@ -8,8 +11,11 @@ import com.qiyukf.unicorn.api.lifecycle.SessionLifeCycleListener;
 import com.qiyukf.unicorn.api.lifecycle.SessionLifeCycleOptions;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.List;
+
 import org.json.JSONArray;
 
 import io.flutter.plugin.common.EventChannel;
@@ -25,7 +31,6 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 public class WangyiQiyuPlugin implements MethodCallHandler {
   private Registrar _registrar;
   private YSFOptions _options;
-  private boolean _isInSession;
 
 //  EventSink buttonClickCallbackEvent;
 //  EventSink onURLClickCallbackEvent;
@@ -63,32 +68,33 @@ public class WangyiQiyuPlugin implements MethodCallHandler {
       Unicorn.init(_registrar.activity(), appKey, _options, new UILImageLoader());
       result.success(null);
     } else if (call.method.equals("openServiceWindow")) {
-      if (_isInSession) {
-        result.success(null);
-        return;
+      ActivityManager manager = (ActivityManager) _registrar.context().getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
+      List<ActivityManager.RunningTaskInfo> runningTasks = manager.getRunningTasks(1);
+      if (runningTasks != null && runningTasks.size() > 0) {
+        ComponentName topActivity = runningTasks.get(0).topActivity;
+        String topActivityClass = topActivity.getClassName();
+        if(topActivityClass.equals("com.qiyukf.unicorn.ui.activity.ServiceMessageActivity")){
+          result.success(null);
+          return;
+        }
       }
-      _isInSession = true;
       ConsultSource source = null;
       String sessionTitle = null;
       if (arguments != null) {
-        sessionTitle = (String) arguments.get("sessionTitle");
-        Integer groupId = (Integer) arguments.get("groupId");
-        Integer staffId = (Integer) arguments.get("staffId");
-        Integer robotId = (Integer) arguments.get("robotId");
-        Integer vipLevel = (Integer) arguments.get("vipLevel");
-        boolean openRobotInShuntMode = (boolean) arguments.get("openRobotInShuntMode");
-        Integer commonQuestionTemplateId = (Integer) arguments.get("commonQuestionTemplateId");
+        sessionTitle = arguments.get("sessionTitle") != null ? (String) arguments.get("sessionTitle") : "";
+        Integer groupId = arguments.get("groupId") != null ? (Integer) arguments.get("groupId") : 0;
+        Integer staffId = arguments.get("staffId") != null ? (Integer) arguments.get("staffId") : 0;
+        Integer robotId = arguments.get("robotId") != null ? (Integer) arguments.get("robotId") : 0;
+        Integer vipLevel = arguments.get("vipLevel") != null ? (Integer) arguments.get("vipLevel") : 0;
+        boolean openRobotInShuntMode = arguments.get("openRobotInShuntMode") != null ? (boolean) arguments.get("openRobotInShuntMode") : false;
         HashMap sourceDict = (HashMap) arguments.get("source");
-        HashMap commodityInfoDict = (HashMap) arguments.get("commodityInfo");
-        Array buttonInfoList = (Array) arguments.get("buttonInfoArray");
-
         String title = "";
         String urlString = "";
         String customInfo = "";
         if (sourceDict != null && !sourceDict.isEmpty()) {
-          title = (String) sourceDict.get("title");
-          urlString = (String) sourceDict.get("urlString");
-          customInfo = (String) sourceDict.get("customInfo");
+          title = sourceDict.get("title") != null ? (String) sourceDict.get("title") : "";
+          urlString = sourceDict.get("urlString") != null ? (String) sourceDict.get("urlString") : "";
+          customInfo = sourceDict.get("customInfo") != null ? (String) sourceDict.get("customInfo") : "";
         }
         source = new ConsultSource(title, urlString, customInfo);
         source.groupId = groupId;
@@ -96,33 +102,26 @@ public class WangyiQiyuPlugin implements MethodCallHandler {
         source.robotId = robotId;
         source.vipLevel = vipLevel;
         source.robotFirst = openRobotInShuntMode;
-        SessionLifeCycleOptions lifeCycleOptions = new SessionLifeCycleOptions();
-        lifeCycleOptions.setCanCloseSession(true)
-        .setCanQuitQueue(true);
-        lifeCycleOptions.setSessionLifeCycleListener(new SessionLifeCycleListener() {
-          @Override
-          public void onLeaveSession() {
-            _isInSession = false;
-          }
-        });
-        source.sessionLifeCycleOptions = lifeCycleOptions;
       }
       Unicorn.openServiceActivity(_registrar.activity(), sessionTitle, source);
       result.success(null);
     } else if (call.method.equals("setUserInfo")) {
-      String userId = (String)arguments.get("userId");
-      String authToken = (String)arguments.get("authToken");
-      Array dataArray = (Array)arguments.get("data");
-      if (userId.length() > 0 || Array.getLength(dataArray) > 0) {
+      String userId = arguments.get("userId") != null ? (String)arguments.get("userId") : null;
+      String authToken = arguments.get("authToken") != null ? (String)arguments.get("authToken") : null;
+      ArrayList dataArray = arguments.get("data") != null ?  (ArrayList)arguments.get("data") : null;
+      if (userId != null || dataArray != null) {
         YSFUserInfo userInfo = new YSFUserInfo();
         userInfo.userId = userId;
         userInfo.authToken = authToken;
-        try {
-          JSONArray mJSONArray = new JSONArray(dataArray);
-          userInfo.data = mJSONArray.toString();
-        } catch (Exception e) {
-          System.out.println(e.toString());
+        if (dataArray != null && dataArray.size() > 0) {
+          try {
+            JSONArray mJSONArray = new JSONArray(dataArray);
+            userInfo.data = mJSONArray.toString();
+          } catch (Exception e) {
+            System.out.println(e.toString());
+          }
         }
+        Unicorn.setUserInfo(userInfo);
       }
       result.success(null);
     } else if (call.method.equals("setCustomUIConfig")) {
@@ -142,11 +141,12 @@ public class WangyiQiyuPlugin implements MethodCallHandler {
   }
 
   private void setCustomUIConfigWithDict(HashMap arguments) {
-    String navBackgroundColor = (String)arguments.get("navBackgroundColor");
+    String navBackgroundColor = arguments.get("navBackgroundColor") != null ?
+            (String)arguments.get("navBackgroundColor") : null;
     if (_options.uiCustomization == null) {
       _options.uiCustomization = new UICustomization();
     }
-    if (arguments.get("navBackgroundColor") != null) {
+    if (navBackgroundColor != null) {
       _options.uiCustomization.titleBackgroundColor = Color.parseColor(navBackgroundColor);
     }
     Unicorn.updateOptions(_options);
