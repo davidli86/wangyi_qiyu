@@ -90,6 +90,9 @@ class _MyAppState extends State<MyApp> {
     WangyiQiyu().openServiceWindow(_defaultSessionConfig);
     WangyiQiyu().setUserInfo(params);
     WangyiQiyu().setCustomUIConfig({"navBackgroundColor":"#CC00FF"});
+    print("code controller is here");
+    WangyiQiyu().onUnreadCountChanged.listen((data) {
+      print("onUnreadCountChanged: " + data.toString() );
+    });
   }
-
 }

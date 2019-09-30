@@ -9,6 +9,11 @@ import android.graphics.Color;
 import com.qiyukf.unicorn.api.*;
 import com.qiyukf.unicorn.api.lifecycle.SessionLifeCycleListener;
 import com.qiyukf.unicorn.api.lifecycle.SessionLifeCycleOptions;
+import com.qiyukf.unicorn.api.msg.OnPushMessageListener;
+import com.qiyukf.unicorn.api.msg.PushMessageExtension;
+import com.qiyukf.unicorn.api.msg.UnicornMessage;
+import com.qiyukf.unicorn.api.pop.OnShopEventListener;
+import com.qiyukf.unicorn.ui.activity.ServiceMessageActivity;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -28,27 +33,27 @@ import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 /** QiyuPlugin */
-public class WangyiQiyuPlugin implements MethodCallHandler {
+public class WangyiQiyuPlugin implements MethodCallHandler, EventChannel.StreamHandler {
   private Registrar _registrar;
   private YSFOptions _options;
 
-//  EventSink buttonClickCallbackEvent;
-//  EventSink onURLClickCallbackEvent;
-//  EventSink onBotClickCallbackEvent;
-//  EventSink onQuitWaitingCallbackEvent;
-//  EventSink onPushMessageClickCallbackEvent;
-//  EventSink onBotCustomInfoCallbackEvent;
-//  EventSink unreadCountChangedEvent;
-//  EventSink sessionListChangedEvent;
-//  EventSink receiveMessageEvent;
+  EventSink buttonClickCallbackEvent;
+  EventSink onURLClickCallbackEvent;
+  EventSink onBotClickCallbackEvent;
+  EventSink onQuitWaitingCallbackEvent;
+  EventSink onPushMessageClickCallbackEvent;
+  EventSink onBotCustomInfoCallbackEvent;
+  EventSink unreadCountChangedEvent;
+  EventSink sessionListChangedEvent;
+  EventSink receiveMessageEvent;
 
   /** Plugin registration. */
   public static void registerWith(Registrar registrar) {
     WangyiQiyuPlugin instance = new WangyiQiyuPlugin(registrar);
     final MethodChannel channel = new MethodChannel(registrar.messenger(), "plugins.com.tmd/qiyu");
     channel.setMethodCallHandler(instance);
-//    final EventChannel eventChannel = new EventChannel(registrar.messenger(), "plugins.com.tmd/event_qiyu");
-//    eventChannel.setStreamHandler(instance);
+    final EventChannel eventChannel = new EventChannel(registrar.messenger(), "plugins.com.tmd/event_qiyu");
+    eventChannel.setStreamHandler(instance);
   }
 
   public WangyiQiyuPlugin(Registrar registrar) {
@@ -66,7 +71,9 @@ public class WangyiQiyuPlugin implements MethodCallHandler {
       String appKey = (String)arguments.get("appKey");
       String appName = (String)arguments.get("appName");
       Unicorn.init(_registrar.activity(), appKey, _options, new UILImageLoader());
+      this.setupListeners();
       result.success(null);
+
     } else if (call.method.equals("openServiceWindow")) {
       ActivityManager manager = (ActivityManager) _registrar.context().getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
       List<ActivityManager.RunningTaskInfo> runningTasks = manager.getRunningTasks(1);
@@ -124,20 +131,37 @@ public class WangyiQiyuPlugin implements MethodCallHandler {
         Unicorn.setUserInfo(userInfo);
       }
       result.success(null);
+
     } else if (call.method.equals("setCustomUIConfig")) {
       this.setCustomUIConfigWithDict(arguments);
       result.success(null);
+
     } else if ("getUnreadCount".equals(call.method)) {
       result.success(Unicorn.getUnreadCount());
+
     } else {
       result.notImplemented();
+
     }
   }
 
   private YSFOptions options() {
     YSFOptions options = new YSFOptions();
     options.statusBarNotificationConfig = new StatusBarNotificationConfig();
+    options.statusBarNotificationConfig.notificationEntrance = ServiceMessageActivity.class;
     return options;
+  }
+
+  private void setupListeners() {
+    UnreadCountChangeListener listener = new UnreadCountChangeListener() {
+      @Override
+      public void onUnreadCountChange(int count) {
+        if (unreadCountChangedEvent != null) {
+          unreadCountChangedEvent.success(count);
+        }
+      }
+    };
+    Unicorn.addUnreadCountChangeListener(listener, true);
   }
 
   private void setCustomUIConfigWithDict(HashMap arguments) {
@@ -152,12 +176,18 @@ public class WangyiQiyuPlugin implements MethodCallHandler {
     Unicorn.updateOptions(_options);
   }
 
-//  @Override
-//  public void onListen(Object arguments, EventChannel.EventSink eventSink) {
-//  }
-//
-//  @Override
-//  public void onCancel(Object o) {
-//  }
+  @Override
+  public void onListen(Object arguments, EventChannel.EventSink eventSink) {
+    if (arguments.equals("onUnreadCountChanged")) {
+      this.unreadCountChangedEvent = eventSink;
+    }
+  }
+
+  @Override
+  public void onCancel(Object o) {
+    if (o.equals("onUnreadCountChanged")) {
+      this.unreadCountChangedEvent = null;
+    }
+  }
 }
 
