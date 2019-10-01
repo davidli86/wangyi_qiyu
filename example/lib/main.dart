@@ -49,7 +49,10 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: IconButton(icon: Icon(Icons.add), onPressed: _onPressed),
+          child: Column(children: <Widget>[
+            IconButton(icon: Icon(Icons.add), onPressed: _onPressed),
+            IconButton(icon: Icon(Icons.local_gas_station), onPressed: _logout),
+          ],),
         ),
       ),
     );
@@ -94,5 +97,9 @@ class _MyAppState extends State<MyApp> {
     WangyiQiyu().onUnreadCountChanged.listen((data) {
       print("onUnreadCountChanged: " + data.toString() );
     });
+  }
+
+  _logout() {
+    WangyiQiyu().logout();
   }
 }

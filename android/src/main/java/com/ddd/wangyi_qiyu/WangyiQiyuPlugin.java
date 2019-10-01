@@ -74,6 +74,10 @@ public class WangyiQiyuPlugin implements MethodCallHandler, EventChannel.StreamH
       this.setupListeners();
       result.success(null);
 
+    } else if ("logout".equals(call.method)) {
+      Unicorn.logout();
+      result.success(null);
+
     } else if (call.method.equals("openServiceWindow")) {
       ActivityManager manager = (ActivityManager) _registrar.context().getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
       List<ActivityManager.RunningTaskInfo> runningTasks = manager.getRunningTasks(1);
